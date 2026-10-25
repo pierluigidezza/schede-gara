@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Schede Gara</title>
+<meta name="theme-color" content="#13202B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: una colonna da telefono. In alto la gara, poi il grande pulsante foto, poi le schede dei partecipanti; barra PDF fissa in basso. Giallo = PART, rosso = FINAL come sulla scheda cartacea. */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --ink:#13202B; --muted:#586674; --line:#D3DAE1;
+  --yellow:#F2B705; --red:#D32F2F; --ok:#1E7B4B; --warn:#9A5B00; --warn-bg:#FFF1CC; --navy:#13202B;
+  --c1:#D8F0F3; --c2:#FFE0CC; --c3:#D5EFDB; --c4:#FFF1CC; --c5:#EAEAEA; --c6:#FBD6FB;
+  --f-display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0F161C; --surface:#18222A; --ink:#E7ECF0; --muted:#9AA8B4; --line:#2B3843;
+    --yellow:#F5C518; --red:#FF6B6B; --ok:#5CCB92; --warn:#F2B84B; --warn-bg:#3A2E10;
+    --c1:#1D3940; --c2:#47301F; --c3:#1E3A28; --c4:#453C1B; --c5:#2F3338; --c6:#432A49;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));
+}
+.topbar{background:var(--navy);color:#fff;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px}
+.topbar h1{font-family:var(--f-display);font-weight:700;font-size:1.6rem;letter-spacing:.04em;text-transform:uppercase;margin:0;flex:1;line-height:1}
+.topbar h1 span{color:var(--yellow)}
+.iconbtn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;min-height:40px;padding:0 12px;font:inherit;font-weight:500;cursor:pointer}
+.wrap{max-width:72rem;margin:0 auto;display:grid;gap:16px;padding:16px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.25rem;letter-spacing:.05em;text-transform:uppercase;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:1 1 16rem}
+.seg button{flex:1;font:inherit;font-weight:600;background:var(--bg);color:var(--ink);border:0;min-height:44px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+input[type=text],input[type=date],input[type=number],input[type=password],select{
+  font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%;min-height:44px
+}
+.datef{flex:0 1 11rem}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:1px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;cursor:pointer;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+.btn.primary{background:var(--yellow);border-color:var(--yellow);color:#13202B}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.small{min-height:38px;padding:6px 12px;font-weight:500;font-size:.92rem}
+.btn:disabled,.btn.off{opacity:.5;pointer-events:none}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.shoot{width:100%;min-height:96px;font-family:var(--f-display);font-size:1.5rem;letter-spacing:.04em;text-transform:uppercase;border-radius:14px;flex-direction:column;gap:2px}
+.shoot small{font-family:var(--f-body);font-size:.85rem;text-transform:none;letter-spacing:0;font-weight:500}
+.cam{width:34px;height:34px}
+.hint{color:var(--muted);font-size:.9rem;margin:0}
+.status{margin:0;font-size:.95rem;min-height:1.3em}
+.status.err{color:var(--red)} .status.ok{color:var(--ok)}
+.busy{display:flex;align-items:center;gap:12px}
+.spin{width:26px;height:26px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--yellow);animation:sp 0.9s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spin{animation-duration:3s}}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.thumbs button{padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:64px;height:64px;background:var(--bg);cursor:pointer}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-variant-numeric:tabular-nums}
+.rank li{display:flex;gap:10px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line)}
+.rank li:last-child{border-bottom:0}
+.rank .pos{font-family:var(--f-display);font-weight:700;font-size:1.2rem;width:2rem}
+.rank .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .tm{font-weight:600}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,19rem),1fr))}
+.card{background:var(--col);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.cardhead{display:flex;gap:8px;align-items:center}
+.num{font-family:var(--f-display);font-weight:700;font-size:1.7rem;line-height:1;width:1.6rem;text-align:center}
+.name{flex:1;font-weight:600}
+.rm{border:0;background:transparent;color:var(--muted);font-size:1.4rem;width:40px;height:40px;cursor:pointer;border-radius:8px}
+.grid{display:grid;grid-template-columns:2rem 1fr 1fr;gap:6px;align-items:center}
+.gh{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.15}
+.pl{font-family:var(--f-display);font-weight:600;font-size:1.1rem}
+.in-t,.in-p{text-align:center;font-variant-numeric:tabular-nums;background:var(--surface)!important}
+.doubt{border-color:var(--warn)!important;background:var(--warn-bg)!important;border-width:2px!important}
+.invalid{border-color:var(--red)!important;border-width:2px!important}
+.tot{border:2px solid;border-radius:8px;padding:8px 10px;background:var(--surface);display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;font-variant-numeric:tabular-nums}
+.tot.part{border-color:var(--yellow)} .tot.final{border-color:var(--red)}
+.tot .k{font-family:var(--f-display);font-weight:700;letter-spacing:.06em;min-width:3.2rem}
+.tot small{color:var(--muted)}
+.final .big{font-family:var(--f-display);font-size:1.8rem;font-weight:700;line-height:1.1}
+.warnline{margin:0;font-size:.85rem;color:var(--warn)}
+.legend{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);margin:0}
+.legend i{display:inline-block;width:18px;height:14px;border-radius:3px;background:var(--warn-bg);border:2px solid var(--warn)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;gap:10px;z-index:5}
+.bar .btn{flex:1}
+.setup{max-width:36rem;margin:0 auto;display:grid;gap:14px}
+.setup ol{margin:0;padding-left:1.3rem;display:grid;gap:6px}
+.setup code{font-size:.9em;background:var(--bg);padding:1px 5px;border-radius:4px}
+a{color:inherit}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:16px;width:min(32rem,calc(100% - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.field{display:grid;gap:4px}
+.lbl{font-size:.82rem;color:var(--muted);font-weight:500}
+.check{display:flex;gap:10px;align-items:center}
+.check input{width:22px;height:22px}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:20;display:flex;align-items:center;justify-content:center;overflow:auto;touch-action:pinch-zoom}
+.viewer img{max-width:none;width:200%;height:auto}
+@media (min-width:700px){.viewer img{width:100%}}
+.viewer button{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:16px;z-index:21}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;z-index:30;max-width:calc(100% - 32px)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Schede <span>Gara</span></h1>
+  <button type="button" class="iconbtn" id="btnSettings" hidden>Impostazioni</button>
+</header>
+
+<!-- Primo avvio: chiave API -->
+<section class="wrap" id="setup" hidden>
+  <div class="panel setup">
+    <h2>Primo avvio</h2>
+    <p class="hint">Per leggere le foto della scheda l'app usa Claude tramite la tua chiave API. La chiave resta salvata solo su questo telefono.</p>
+    <ol>
+      <li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> e accedi.</li>
+      <li>In <b>Billing</b> aggiungi un piccolo credito (bastano pochi euro per molte schede).</li>
+      <li>In <b>API Keys</b> premi <b>Create Key</b> e copia la chiave (inizia con <code>sk-ant-</code>).</li>
+      <li>Incollala qui sotto.</li>
+    </ol>
+    <div class="field"><label class="lbl" for="keyIn">Chiave API</label><input id="keyIn" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."></div>
+    <button type="button" class="btn primary" id="btnSaveKey">Salva e inizia</button>
+    <p class="status" id="setupStatus" role="status"></p>
+  </div>
+</section>
+
+<!-- App -->
+<main class="wrap" id="main" hidden>
+  <section class="panel" aria-label="Gara">
+    <div class="row">
+      <div class="seg" role="group" aria-label="Scheda">
+        <button type="button" data-g="carroponte" aria-pressed="true">Carroponte</button>
+        <button type="button" data-g="mulettisti" aria-pressed="false">Mulettisti</button>
+      </div>
+      <input class="datef" id="data" type="date" aria-label="Data della gara">
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Foto della scheda">
+    <label class="btn primary filebtn shoot" id="lblCam">
+      <svg class="cam" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
+      <span id="camText">Fotografa la scheda</span>
+      <small id="camSub">la lettura parte da sola</small>
+      <input id="inCam" type="file" accept="image/*" capture="environment">
+    </label>
+    <div class="row">
+      <label class="btn small filebtn" id="lblGal">Scegli dalla galleria<input id="inGal" type="file" accept="image/*" multiple></label>
+      <button type="button" class="btn small" id="btnRetry" hidden>Rileggi le ultime foto</button>
+    </div>
+    <div class="busy" id="busy" hidden>
+      <div class="spin" aria-hidden="true"></div>
+      <p class="status" id="busyText">Lettura in corso...</p>
+      <button type="button" class="btn small" id="btnStop">Ferma</button>
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="thumbs" id="thumbs" aria-label="Foto lette (tocca per ingrandire)"></div>
+  </section>
+
+  <section class="panel" id="rankPanel" hidden>
+    <h2>Classifica</h2>
+    <ol class="rank" id="rank"></ol>
+  </section>
+
+  <section class="grid-section" aria-label="Partecipanti">
+    <p class="legend" id="legend" hidden><i></i> Valore incerto: controllalo sulla scheda e correggilo se serve.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="row" id="moreRow">
+    <button type="button" class="btn small" id="btnAdd">Aggiungi partecipante a mano</button>
+    <button type="button" class="btn small" id="btnNew" hidden>Nuova gara</button>
+  </section>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <button type="button" class="btn dark" id="btnShare">Condividi PDF</button>
+  <button type="button" class="btn" id="btnSave">Salva PDF</button>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" style="display:grid;gap:14px">
+    <h2>Impostazioni</h2>
+    <div class="field"><label class="lbl" for="setNota">Corso o sede (stampato sul PDF accanto alla data)</label><input id="setNota" type="text" autocomplete="off" placeholder="Es. Corso carroponte, sede di Brescia"></div>
+    <label class="check"><input type="checkbox" id="setStamp"> Scrivi data e corso in piccolo sul PDF</label>
+    <div class="field"><label class="lbl" for="setModel">Lettura</label>
+      <select id="setModel">
+        <option value="claude-sonnet-5-5">Standard (veloce, economica)</option>
+        <option value="claude-opus-5-5">Accurata (più lenta, per calligrafie difficili)</option>
+      </select>
+    </div>
+    <div class="field"><label class="lbl" for="setKey">Chiave API (lascia vuoto per non cambiarla)</label><input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."></div>
+    <p class="hint" id="keyInfo"></p>
+    <div class="row">
+      <button type="button" class="btn small" id="btnDelKey">Rimuovi chiave</button>
+      <span style="flex:1"></span>
+      <button type="submit" class="btn primary" id="btnDlgOk" value="ok">Fatto</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="viewer" id="viewer" hidden>
+  <button type="button" class="btn small" id="btnCloseViewer">Chiudi</button>
+  <img id="viewerImg" alt="Foto della scheda">
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="pdf-lib.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
