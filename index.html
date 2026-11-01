@@ -50,6 +50,14 @@ input[type=text],input[type=date],input[type=number],input[type=password],select
   font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%;min-height:44px
 }
 .datef{flex:0 1 11rem}
+.penrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.penlbl{font-weight:500}
+.penlbl small{color:var(--muted);font-weight:400}
+.stepper{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.stepper button{font:inherit;font-size:1.3rem;font-weight:600;width:46px;min-height:44px;border:0;background:var(--bg);color:var(--ink);cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper input{width:3.6rem;text-align:center;font-weight:700;font-size:1.1rem;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;background:var(--surface);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 :focus-visible{outline:3px solid var(--yellow);outline-offset:1px}
 .btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;cursor:pointer;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
 .btn.primary{background:var(--yellow);border-color:var(--yellow);color:#13202B}
@@ -151,6 +159,15 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
         <button type="button" data-g="mulettisti" aria-pressed="false">Mulettisti</button>
       </div>
       <input class="datef" id="data" type="date" aria-label="Data della gara">
+    </div>
+    <div class="penrow">
+      <label class="penlbl" for="pen">Penalità</label>
+      <div class="stepper">
+        <button type="button" id="penMinus" aria-label="Diminuisci di 5 secondi">−</button>
+        <input id="pen" type="number" inputmode="numeric" min="20" max="60" step="1" value="20">
+        <button type="button" id="penPlus" aria-label="Aumenta di 5 secondi">+</button>
+      </div>
+      <span class="penlbl">sec <small>ciascuna (20–60)</small></span>
     </div>
   </section>
 

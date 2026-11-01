@@ -21,7 +21,11 @@ function short(sec){
   const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
   return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
 }
-function totals(rows){
+// Secondi per ogni penalità: impostabili da 20 a 60 all'avvio della gara.
+const PEN_MIN = 20, PEN_MAX = 60;
+function clampPen(v){ const n = parseInt(v, 10); return Number.isFinite(n) ? Math.min(PEN_MAX, Math.max(PEN_MIN, n)) : PEN_MIN; }
+function totals(rows, penVal){
+  const pv1 = clampPen(penVal == null ? PEN_MIN : penVal);
   let part = 0, pen = 0, bad = 0;
   for (const r of rows) {
     const t = String(r.t == null ? '' : r.t).trim();
@@ -29,7 +33,7 @@ function totals(rows){
     const pv = String(r.p == null ? '' : r.p).trim();
     if (pv !== '') { const k = parseInt(pv, 10); if (Number.isFinite(k) && k >= 0) pen += k; else bad++; }
   }
-  return { part, pen, penSec: pen * 20, final: part + pen * 20, bad };
+  return { part, pen, penSec: pen * pv1, final: part + pen * pv1, bad };
 }
 
 // ===================== Configurazione =====================
@@ -42,6 +46,8 @@ const LAYOUT = {"names":[[60.0,173.5,175.2,184.5],[188.3,301.9,175.2,184.5],[316
   "rowBottoms":[248.1,279.9,311.7,343.5,375.3,407.1],
   "rowG":[{"t":[52.6,106.6],"p":[118.1,169.5]},{"t":[181.0,235.1],"p":[246.5,297.8]},{"t":[309.3,363.5],"p":[374.9,426.2]},{"t":[437.7,491.7],"p":[503.2,554.6]},{"t":[566.1,620.1],"p":[631.6,683.0]},{"t":[694.4,748.5],"p":[760.0,811.4]}],
   "part":{"bottom":449.5,"pbottom":450.8,"g":[{"t":[50.9,107.9],"p":[114.4,172.7]},{"t":[179.3,236.3],"p":[242.8,301.1]},{"t":[307.7,364.7],"p":[371.2,429.5]},{"t":[436.1,493.1],"p":[499.6,557.9]},{"t":[564.5,621.5],"p":[628.0,686.3]},{"t":[692.9,749.9],"p":[756.4,814.7]}]},
+  "penLabel":[{"x0":157.18,"x1":167.46,"base":127.2},{"x0":284.75,"x1":295.03,"base":127.08},{"x0":413.15,"x1":423.42,"base":127.08},{"x0":541.52,"x1":551.8,"base":127.08},{"x0":669.92,"x1":680.19,"base":127.08},{"x0":798.31,"x1":808.59,"base":127.08}],
+  "colBg":[[0.855,0.945,0.953],[1.0,0.882,0.8],[0.82,0.945,0.855],[0.996,0.949,0.804],[0.949,0.949,0.949],[1.0,0.8,1.0]],
   "final":{"bottom":509.1,"g":[[[49.0,85.0],[93.4,129.4],[137.8,173.8]],[[177.4,213.4],[221.8,257.8],[266.1,302.3]],[[305.7,341.8],[350.1,386.1],[394.5,430.7]],[[434.1,470.1],[478.5,514.6],[522.9,559.0]],[[562.4,598.6],[606.9,642.9],[651.2,687.3]],[[690.9,727.0],[735.3,771.4],[779.7,815.7]]]}};
 
 const PROMPT = [
@@ -62,7 +68,7 @@ const PROMPT = [
 const $ = s => document.querySelector(s);
 const KEY_STATE = 'sg-state-v1', KEY_API = 'sg-apikey', KEY_SET = 'sg-settings';
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
-const state = { gara: 'carroponte', data: today(), parts: [] };
+const state = { gara: 'carroponte', data: today(), pen: 20, parts: [] };
 const settings = { model: 'claude-sonnet-5-5', stamp: true, nota: '' };
 let nextId = 1;
 const refs = {};
@@ -84,7 +90,7 @@ const displayName = (p, i) => p.nome.trim() || ('Partecipante ' + (i + 1));
 
 function save(){
   store.set(KEY_STATE, JSON.stringify({
-    gara: state.gara, data: state.data,
+    gara: state.gara, data: state.data, pen: state.pen,
     parts: state.parts.map(p => ({ nome: p.nome, rows: p.rows, dubbi: [...p.dubbi] }))
   }));
 }
@@ -94,6 +100,7 @@ function load(){
     if (s) {
       if (GARE[s.gara]) state.gara = s.gara;
       if (typeof s.data === 'string' && s.data) state.data = s.data;
+      if (s.pen != null) state.pen = clampPen(s.pen);
       for (const q of (Array.isArray(s.parts) ? s.parts : [])) {
         const p = newPart(String(q.nome || ''));
         for (let r = 0; r < 6; r++) { const x = (q.rows || [])[r] || {}; p.rows[r].t = String(x.t || ''); p.rows[r].p = String(x.p == null ? '' : x.p); }
@@ -186,15 +193,15 @@ function renderCards(){
 }
 
 function ranking(){
-  return state.parts.map((p, i) => ({ p, i, t: totals(p.rows) })).filter(x => x.t.part > 0).sort((a, b) => a.t.final - b.t.final);
+  return state.parts.map((p, i) => ({ p, i, t: totals(p.rows, state.pen) })).filter(x => x.t.part > 0).sort((a, b) => a.t.final - b.t.final);
 }
 function updateTotals(){
   state.parts.forEach(p => {
     const r = refs[p.id]; if (!r) return;
-    const t = totals(p.rows);
+    const t = totals(p.rows, state.pen);
     r.partT.textContent = mmss(t.part);
     r.penS.textContent = String(t.penSec);
-    r.penSmall.textContent = 'sec (' + t.pen + ' × 20)';
+    r.penSmall.textContent = 'sec (' + t.pen + ' × ' + state.pen + ')';
     r.finalT.textContent = hms(t.final);
     r.warn.hidden = t.bad === 0;
     r.warn.textContent = t.bad ? 'Un valore non è valido ed è escluso dal calcolo (tempo come mm:ss, secondi da 00 a 59).' : '';
@@ -375,6 +382,7 @@ async function buildPdf(){
   out.setTitle(GARE[state.gara].nome + ' ' + fmtDate(state.data));
   const bold = await out.embedFont(StandardFonts.HelveticaBold);
   const reg = await out.embedFont(StandardFonts.Helvetica);
+  const obl = await out.embedFont(StandardFonts.HelveticaOblique);
   const color = rgb(0.06, 0.12, 0.5);
   const BASE = 2.3;
   const safe = (f, str) => { try { f.encodeText(str); return str; } catch (e) { return str.normalize('NFD').replace(/[^\x20-\x7E\xA0-\xFF]/g, ''); } };
@@ -389,6 +397,15 @@ async function buildPdf(){
       const w = font.widthOfTextAtSize(str, size);
       page.drawText(str, { x: align === 'l' ? x : x - w / 2, y: H - (bottom - BASE), size, font, color });
     };
+    // Sostituisce il "20" stampato in "sec (∑n°x20)" con il valore della gara.
+    if (state.pen !== 20) {
+      LAYOUT.penLabel.forEach((L, g) => {
+        const c = LAYOUT.colBg[g];
+        page.drawRectangle({ x: L.x0 - 0.1, y: L.base - 2.3, width: L.x1 - L.x0 + 0.3, height: 9.4, color: rgb(c[0], c[1], c[2]) });
+        const v = String(state.pen), w = obl.widthOfTextAtSize(v, 9.24);
+        page.drawText(v, { x: (L.x0 + L.x1) / 2 - w / 2, y: L.base, size: 9.24, font: obl, color: rgb(0, 0, 0) });
+      });
+    }
     if (settings.stamp) {
       const line = [fmtDate(state.data), settings.nota.trim(), pages > 1 ? 'pagina ' + (pi + 1) + ' di ' + pages : ''].filter(Boolean).join('  -  ');
       if (line) put(line, 20, 30, 8.5, reg, 'l');
@@ -412,7 +429,7 @@ async function buildPdf(){
         const pv = String(row.p == null ? '' : row.p).trim(), k = parseInt(pv, 10);
         if (pv !== '' && Number.isFinite(k) && k >= 0) put(String(k), (G.p[0] + G.p[1]) / 2, bottom, 11);
       });
-      const t = totals(p.rows);
+      const t = totals(p.rows, state.pen);
       if (t.part > 0 || t.pen > 0) {
         const P = LAYOUT.part.g[g], mid = (P.t[0] + P.t[1]) / 2;
         put(pad(Math.floor(t.part / 60)), mid - 13, LAYOUT.part.bottom, 11.5);
@@ -476,6 +493,11 @@ function bind(){
   });
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { state.gara = b.dataset.g; syncGara(); save(); }));
   $('#data').addEventListener('input', e => { state.data = e.target.value; save(); });
+  const setPen = v => { state.pen = clampPen(v); $('#pen').value = state.pen; $('#penMinus').disabled = state.pen <= PEN_MIN; $('#penPlus').disabled = state.pen >= PEN_MAX; updateTotals(); save(); };
+  $('#pen').addEventListener('change', e => setPen(e.target.value));
+  $('#penMinus').addEventListener('click', () => setPen(state.pen - 5));
+  $('#penPlus').addEventListener('click', () => setPen(state.pen + 5));
+  setPen(state.pen);
   $('#inCam').addEventListener('change', e => { const f = e.target.files; readFiles(f).finally(() => { e.target.value = ''; }); });
   $('#inGal').addEventListener('change', e => { const f = e.target.files; readFiles(f).finally(() => { e.target.value = ''; }); });
   $('#btnRetry').addEventListener('click', () => {
