@@ -69,7 +69,7 @@ const $ = s => document.querySelector(s);
 const KEY_STATE = 'sg-state-v1', KEY_API = 'sg-apikey', KEY_SET = 'sg-settings';
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 const state = { gara: 'carroponte', data: today(), pen: 20, parts: [] };
-const settings = { model: 'claude-sonnet-5-5', stamp: true, nota: '' };
+const settings = { model: 'claude-sonnet-5-5', stamp: true, corso: '', sede: '' };
 let nextId = 1;
 const refs = {};
 let photos = [];      // {blob, url} delle ultime foto lette (solo in memoria)
@@ -112,7 +112,9 @@ function load(){
     if (st) {
       if (typeof st.model === 'string' && st.model) settings.model = st.model;
       if (typeof st.stamp === 'boolean') settings.stamp = st.stamp;
-      if (typeof st.nota === 'string') settings.nota = st.nota;
+      if (typeof st.corso === 'string') settings.corso = st.corso;
+      else if (typeof st.nota === 'string') settings.corso = st.nota;
+      if (typeof st.sede === 'string') settings.sede = st.sede;
     }
   } catch (e) {}
 }
@@ -407,7 +409,7 @@ async function buildPdf(){
       });
     }
     if (settings.stamp) {
-      const line = [fmtDate(state.data), settings.nota.trim(), pages > 1 ? 'pagina ' + (pi + 1) + ' di ' + pages : ''].filter(Boolean).join('  -  ');
+      const line = [fmtDate(state.data), settings.corso.trim(), settings.sede.trim(), pages > 1 ? 'pagina ' + (pi + 1) + ' di ' + pages : ''].filter(Boolean).join('  -  ');
       if (line) put(line, 20, 30, 8.5, reg, 'l');
     }
     state.parts.slice(pi * 6, pi * 6 + 6).forEach((p, g) => {
@@ -475,8 +477,6 @@ function showMain(){ $('#setup').hidden = true; $('#main').hidden = false; $('#b
 const keyLooksOk = k => /^sk-ant-[\w-]{20,}$/.test(k);
 
 function openSettings(){
-  $('#setNota').value = settings.nota;
-  $('#setStamp').checked = settings.stamp;
   $('#setModel').value = settings.model;
   $('#setKey').value = '';
   const k = store.get(KEY_API);
@@ -493,6 +493,10 @@ function bind(){
   });
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { state.gara = b.dataset.g; syncGara(); save(); }));
   $('#data').addEventListener('input', e => { state.data = e.target.value; save(); });
+  $('#corso').value = settings.corso; $('#sede').value = settings.sede; $('#stamp').checked = settings.stamp;
+  $('#corso').addEventListener('input', e => { settings.corso = e.target.value; saveSettings(); });
+  $('#sede').addEventListener('input', e => { settings.sede = e.target.value; saveSettings(); });
+  $('#stamp').addEventListener('change', e => { settings.stamp = e.target.checked; saveSettings(); });
   const setPen = v => { state.pen = clampPen(v); $('#pen').value = state.pen; $('#penMinus').disabled = state.pen <= PEN_MIN; $('#penPlus').disabled = state.pen >= PEN_MAX; updateTotals(); save(); };
   $('#pen').addEventListener('change', e => setPen(e.target.value));
   $('#penMinus').addEventListener('click', () => setPen(state.pen - 5));
@@ -523,7 +527,7 @@ function bind(){
   });
   $('#btnSettings').addEventListener('click', openSettings);
   $('#dlg').addEventListener('close', () => {
-    settings.nota = $('#setNota').value; settings.stamp = $('#setStamp').checked; settings.model = $('#setModel').value; saveSettings();
+    settings.model = $('#setModel').value; saveSettings();
     const k = $('#setKey').value.trim();
     if (k) { if (keyLooksOk(k)) { store.set(KEY_API, k); toast('Chiave aggiornata.'); } else toast('Chiave non valida: non è stata cambiata.'); }
   });

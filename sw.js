@@ -1,5 +1,5 @@
 // Cache dell'app: si apre anche con rete scarsa; la lettura della foto richiede comunque internet.
-const VERSION = 'schede-gara-v2';
+const VERSION = 'schede-gara-v3';
 const SHELL = [
   './', './index.html', './app.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png',

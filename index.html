@@ -50,7 +50,8 @@ input[type=text],input[type=date],input[type=number],input[type=password],select
   font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%;min-height:44px
 }
 .datef{flex:0 1 11rem}
-.penrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.field.grow{flex:1 1 12rem;min-width:0}
+.penrow{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;white-space:nowrap}
 .penlbl{font-weight:500}
 .penlbl small{color:var(--muted);font-weight:400}
 .stepper{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
@@ -167,8 +168,13 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
         <input id="pen" type="number" inputmode="numeric" min="20" max="60" step="1" value="20">
         <button type="button" id="penPlus" aria-label="Aumenta di 5 secondi">+</button>
       </div>
-      <span class="penlbl">sec <small>ciascuna (20–60)</small></span>
+      <span class="penlbl">sec <small>(20–60)</small></span>
     </div>
+    <div class="row">
+      <div class="field grow"><label class="lbl" for="corso">Nome corso</label><input id="corso" type="text" autocomplete="off" placeholder="Es. Corso carroponte"></div>
+      <div class="field grow"><label class="lbl" for="sede">Sede</label><input id="sede" type="text" autocomplete="off" placeholder="Es. Brescia"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="stamp"> Scrivi data, corso e sede in piccolo sul PDF</label>
   </section>
 
   <section class="panel" aria-label="Foto della scheda">
@@ -215,8 +221,6 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 <dialog id="dlg">
   <form method="dialog" style="display:grid;gap:14px">
     <h2>Impostazioni</h2>
-    <div class="field"><label class="lbl" for="setNota">Corso o sede (stampato sul PDF accanto alla data)</label><input id="setNota" type="text" autocomplete="off" placeholder="Es. Corso carroponte, sede di Brescia"></div>
-    <label class="check"><input type="checkbox" id="setStamp"> Scrivi data e corso in piccolo sul PDF</label>
     <div class="field"><label class="lbl" for="setModel">Lettura</label>
       <select id="setModel">
         <option value="claude-sonnet-5-5">Standard (veloce, economica)</option>
